@@ -60,7 +60,7 @@ stations = ["O'Hare", "Rosemont", "Cumberland", "Harlem", "Jefferson Park", "Mon
             "Forest Park"]
 
 
-class TrainSimulation(mc.MonteCarlo):
+class TrainSimulation(MonteCarlo):
     def __init__(self, stations, num_trains):
         self.stations = stations
         self.station_traffic = {}
