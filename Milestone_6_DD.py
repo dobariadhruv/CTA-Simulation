@@ -51,27 +51,60 @@ class MonteCarlo:
         return self.bootstrap(self.results)
 
 
-stations = ["O'Hare", "Rosemont", "Cumberland", "Harlem", "Jefferson Park", "Montrose", "Irving Park", "Addison",
-            "Belmont", "Logan Square", "California", "Western", "Damen", "Division", "Chicago", "Grand", "Clark/Lake",
-            "Washington", "Monroe", "Jackson", "LaSalle", "Clinton", "UIC-Halsted", "Racine",
-            "Illinois Medical District", "Western", "Kedzie-Homan", "Pulaski", "Cicero", "Austin", "Oak Park", "Harlem",
-            "Forest Park"]
+stations = np.array([("Addison-O'Hare", 2455, 917),
+            ("Austin-Forest Park", 1629, 605),
+            ("Belmont-O'Hare", 4532, 1447),
+            ("California/Milwaukee", 4609, 1421),
+            ("Chicago/Milwaukee", 3469, 1269),
+            ("Cicero-Forest Park", 1220, 307),
+            ("Clark/Lake", 16359, 7331),
+            ("Clinton-Forest Park", 3020, 1196),
+            ("Cumberland", 3750, 1387),
+            ("Damen/Milwaukee", 5865, 1463),
+            ("Division/Milwaukee", 5153, 1749),
+            ("Forest Park", 2854, 998),
+            ("Grand/Milwaukee", 2375, 722),
+            ("Harlem-Forest Park", 1020, 348),
+            ("Medical Center", 2278, 1134),
+            ("Irving Park-O'Hare", 3694, 1130),
+            ("Jackson/Dearborn", 6026, 2466),
+            ("Jefferson Park", 5647, 1807),
+            ("Kedzie-Homan-Forest Park", 1835, 489),
+            ("LaSalle", 2529, 1002),
+            ("Logan Square", 6271, 1859),
+            ("Monroe/Dearborn", 6310, 2868),
+            ("Montrose-O'Hare", 2141, 767),
+            ("O'Hare Airport", 10832, 2082),
+            ("Oak Park-Forest Park", 1466, 621),
+            ("Pulaski-Forest Park", 1615, 297),
+            ("Racine", 1843, 772),
+            ("Rosemont", 5598, 1685),
+            ("UIC-Halsted", 4686, 2737),
+            ("Washington/Dearborn", 10718, 3669),
+            ("Western-Forest Park", 1421, 424),
+            ("Western/Milwaukee", 4496, 1564)])
+
+
 
 
 class TrainSimulation(MonteCarlo):
     def __init__(self, stations, num_trains):
         self.stations = stations
-        self.station_traffic = {}
         self.num_trains = num_trains
 
-        for station in self.stations:
-            self.station_traffic[station] = 0
 
     def SimulateOneTrain(self):
-        # Generating Riders
-        riders_in_stations = rand.normal(4313 / self.num_trains, (0.67 * 4313) / self.num_trains, 33)
+        # Generating riders based on station distributions
+        riders_in_stations = []
 
-        # Minimum of 0 riders, as opposed to negative riders.
+        for station in self.stations:
+            avg, s_dev = int(station[1]), int(station[2])
+            # Create number of riders in the day
+            daily_num = rand.normal(avg, s_dev)
+            # Divide by number of trains that are sent through the day
+            riders_in_stations.append(int(daily_num / self.num_trains))
+
+        # Setting station riders to a minimum of 0, to avoid negative riders on a platform
         for i in range(len(riders_in_stations)):
             if riders_in_stations[i] <= 0:
                 riders_in_stations[i] = 0
@@ -79,7 +112,7 @@ class TrainSimulation(MonteCarlo):
         # Tracking Destinations
         rider_destinations = {}
         for station in self.stations:
-            rider_destinations[station] = 0
+            rider_destinations[station[0]] = 0
 
         # Tracking people on the train
         people_on_train = 0
@@ -87,30 +120,55 @@ class TrainSimulation(MonteCarlo):
         # Iterate through stations
         # From O'Hare to Forest Park
         for i in range(len(self.stations)):
-            # Figure out possible destinations for new riders
-            possible_destinations = self.stations[i + 1:]
 
-            # Distribute new riders to all possible destinations
-            for destination in possible_destinations:
-                rider_destinations[destination] += riders_in_stations[i] / len(possible_destinations)
+            # Remove people getting off the train at this destination
+            people_on_train -= rider_destinations[self.stations[i][0]]
 
             # Add new riders to train
             people_on_train += riders_in_stations[i]
+            new_passengers = riders_in_stations[i]
+            riders_in_stations[i] = 0
 
-            # Remove people getting off the train at this destination
-            people_on_train -= rider_destinations[self.stations[i]]
+            # If the train is at capacity, we can't have everyone on board
+            if people_on_train > 640:
+                overflow = people_on_train - 640
+                new_passengers -+ overflow
+                riders_in_stations[i] += overflow
+                people_on_train = 640
 
-        total_riders = sum(riders_in_stations)
-        total_exits = sum(rider_destinations.values())
+            # Distribute new riders to all possible destinations
 
-        riders_per_station = total_riders / len(self.stations)
+            # Figure out possible destinations for new riders
+            possible_destinations = len(self.stations[:,0][i + 1:])
+            index_start = len(rider_destinations) - possible_destinations - 2
+            destination_index = index_start
 
-        return riders_per_station
+            while new_passengers > 0:
+                station_name = self.stations[destination_index][0]
+                rider_destinations[station_name] += 1
+                new_passengers -= 1
+                destination_index += 1
+
+                if destination_index == len(rider_destinations) - 1:
+                    destination_index = index_start
+
+        print(rider_destinations)
+
+        return sum(riders_in_stations)
+
 
     def SimulateOneTrainReverse(self):
-        riders_in_stations = rand.normal(4313 / self.num_trains, (0.67 * 4313) / self.num_trains, 33)
+        # Generating riders based on station distributions
+        riders_in_stations = []
 
-        # Minimum of 0 riders, as opposed to negative riders.
+        for station in self.stations:
+            avg, s_dev = int(station[1]), int(station[2])
+            # Create number of riders in the day
+            daily_num = rand.normal(avg, s_dev)
+            # Divide by number of trains that are sent through the day
+            riders_in_stations.append(int(daily_num / self.num_trains))
+
+        # Setting station riders to a minimum of 0, to avoid negative riders on a platform
         for i in range(len(riders_in_stations)):
             if riders_in_stations[i] <= 0:
                 riders_in_stations[i] = 0
@@ -118,42 +176,59 @@ class TrainSimulation(MonteCarlo):
         # Tracking Destinations
         rider_destinations = {}
         for station in self.stations:
-            rider_destinations[station] = 0
+            rider_destinations[station[0]] = 0
 
         # Tracking people on the train
         people_on_train = 0
 
+        # Iterate through stations
+        # From O'Hare to Forest Park
         for i in range(len(self.stations) - 1, -1, -1):
-            # Figure out possible destinations for new riders
-            possible_destinations = self.stations[:i]
 
-            # Distribute new riders to all possible destinations
-            for destination in possible_destinations[::-1]:
-                rider_destinations[destination] += riders_in_stations[i] / len(possible_destinations[::-1])
+            # Remove people getting off the train at this destination
+            people_on_train -= rider_destinations[self.stations[i][0]]
 
             # Add new riders to train
             people_on_train += riders_in_stations[i]
+            new_passengers = riders_in_stations[i]
+            riders_in_stations[i] = 0
 
-            # Remove people getting off the train at this destination
-            people_on_train -= rider_destinations[self.stations[i - 1]]
+            # If the train is at capacity, we can't have everyone on board
+            if people_on_train > 640:
+                overflow = people_on_train - 640
+                new_passengers -+ overflow
+                riders_in_stations[i] += overflow
+                people_on_train = 640
 
-        total_riders = sum(riders_in_stations)
-        total_exits = sum(rider_destinations.values())
+            # Distribute new riders to all possible destinations
 
-        riders_per_station = total_riders / len(self.stations)
+            # Figure out possible destinations for new riders
+            possible_destinations = len(self.stations[:,0][i + 1:])
+            index_start = len(rider_destinations) - possible_destinations - 2
+            destination_index = index_start
 
-        return riders_per_station
+            while new_passengers > 0:
+                station_name = self.stations[destination_index][0]
+                rider_destinations[station_name] += 1
+                new_passengers -= 1
+                destination_index += 1
+
+                if destination_index == len(rider_destinations) - 1:
+                    destination_index = index_start
+
+        print(rider_destinations)
+
+        return sum(riders_in_stations)
+
 
     def SimulateOnce(self):
         riders = 0
-        riders1 = 0
+        reverse = 0
         for i in range(self.num_trains):
             riders += self.SimulateOneTrain()
-            riders1 += self.SimulateOneTrainReverse()
-        return riders, riders1
+            reverse += self.SimulateOneTrainReverse()
+        return riders, reverse
 
 
 sim1 = TrainSimulation(stations, 200)
-otof, ftoo = sim1.SimulateOnce()
-print("Total ridership from O'Hare to Forest Park : ", otof)
-print("Total ridership from Forest Park to O'Hare : ", ftoo)
+sim1.SimulateOnce()
