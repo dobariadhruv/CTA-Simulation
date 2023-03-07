@@ -123,24 +123,25 @@ class TrainSimulation(MonteCarlo):
 
             # Remove people getting off the train at this destination
             people_on_train -= rider_destinations[self.stations[i][0]]
+            rider_destinations[self.stations[i][0]] = 0
 
             # Add new riders to train
-            people_on_train += riders_in_stations[i]
             new_passengers = riders_in_stations[i]
+            people_on_train += new_passengers
             riders_in_stations[i] = 0
 
             # If the train is at capacity, we can't have everyone on board
             if people_on_train > 640:
                 overflow = people_on_train - 640
-                new_passengers -+ overflow
+                new_passengers -= overflow
                 riders_in_stations[i] += overflow
                 people_on_train = 640
 
             # Distribute new riders to all possible destinations
 
             # Figure out possible destinations for new riders
-            possible_destinations = len(self.stations[:,0][i + 1:])
-            index_start = len(rider_destinations) - possible_destinations - 2
+            possible_destinations = len(self.stations[i:])
+            index_start = len(rider_destinations) - possible_destinations - 1
             destination_index = index_start
 
             while new_passengers > 0:
@@ -152,7 +153,7 @@ class TrainSimulation(MonteCarlo):
                 if destination_index == len(rider_destinations) - 1:
                     destination_index = index_start
 
-        print(rider_destinations)
+        # print(rider_destinations)
 
         return sum(riders_in_stations)
 
@@ -167,6 +168,7 @@ class TrainSimulation(MonteCarlo):
             daily_num = rand.normal(avg, s_dev)
             # Divide by number of trains that are sent through the day
             riders_in_stations.append(int(daily_num / self.num_trains))
+
 
         # Setting station riders to a minimum of 0, to avoid negative riders on a platform
         for i in range(len(riders_in_stations)):
@@ -187,6 +189,7 @@ class TrainSimulation(MonteCarlo):
 
             # Remove people getting off the train at this destination
             people_on_train -= rider_destinations[self.stations[i][0]]
+            rider_destinations[self.stations[i][0]] = 0
 
             # Add new riders to train
             people_on_train += riders_in_stations[i]
@@ -196,27 +199,24 @@ class TrainSimulation(MonteCarlo):
             # If the train is at capacity, we can't have everyone on board
             if people_on_train > 640:
                 overflow = people_on_train - 640
-                new_passengers -+ overflow
+                new_passengers -= overflow
                 riders_in_stations[i] += overflow
                 people_on_train = 640
 
             # Distribute new riders to all possible destinations
 
             # Figure out possible destinations for new riders
-            possible_destinations = len(self.stations[:,0][i + 1:])
-            index_start = len(rider_destinations) - possible_destinations - 2
+            index_start = i - 1
             destination_index = index_start
 
             while new_passengers > 0:
                 station_name = self.stations[destination_index][0]
                 rider_destinations[station_name] += 1
                 new_passengers -= 1
-                destination_index += 1
+                destination_index -= 1
 
-                if destination_index == len(rider_destinations) - 1:
+                if destination_index <= 0:
                     destination_index = index_start
-
-        print(rider_destinations)
 
         return sum(riders_in_stations)
 
@@ -230,5 +230,5 @@ class TrainSimulation(MonteCarlo):
         return riders, reverse
 
 
-sim1 = TrainSimulation(stations, 200)
-sim1.SimulateOnce()
+sim1 = TrainSimulation(stations, 100)
+sim1.RunSimulation(1000)
