@@ -227,8 +227,4 @@ class TrainSimulation(MonteCarlo):
         for i in range(self.num_trains):
             riders += self.SimulateOneTrain()
             reverse += self.SimulateOneTrainReverse()
-        return riders, reverse
-
-
-sim1 = TrainSimulation(stations, 100)
-sim1.RunSimulation(1000)
+        return riders + reverse
