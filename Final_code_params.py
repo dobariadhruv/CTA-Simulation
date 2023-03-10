@@ -111,7 +111,7 @@ class TrainSimulation(MonteCarlo):
             
             # Adjust riders for big events
             if self.big_events == 'True':
-                daily_num *= 1.2
+                daily_num *= 1.6
             
             
             # Divide by number of trains that are sent through the day
