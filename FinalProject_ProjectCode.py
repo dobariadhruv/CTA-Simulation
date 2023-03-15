@@ -247,6 +247,17 @@ class TrainSimulation(MonteCarlo):
             avg, s_dev = int(station[1]), int(station[2])
             # Create number of riders in the day
             daily_num = rand.normal(avg, s_dev)
+
+
+            if self.weather == 'inclement':
+                daily_num *= 0.8
+            elif self.weather == 'sunny':
+                daily_num *= 1.5
+            
+            # Adjust riders for big events
+            if self.big_events == 'True':
+                daily_num *= 1.6
+
             # Divide by number of trains that are sent through the day
             riders_in_stations.append(int(daily_num / self.num_trains))
 
